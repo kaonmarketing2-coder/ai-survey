@@ -21,11 +21,10 @@ const PASS_KEY = "ai_survey_admin_pass";
 
 // 정렬 기준(수준/목표) — 단일선택 문항의 선택지 순번으로 수준을 계산
 const SORT_OPTIONS = [
-  { key: "q14", label: "수준 (Q14 난이도 진단)" },
+  { key: "q14", label: "수준 (Q13 난이도 진단)" },
   { key: "q5", label: "AI 업무 활용 (Q5)" },
   { key: "q1", label: "AI 사용 빈도 (Q1)" },
   { key: "q7", label: "Agent 이해 (Q7)" },
-  { key: "q13", label: "목표 수준 (Q13)" },
   { key: "name", label: "이름" },
   { key: "created", label: "제출 시각" },
 ];
@@ -176,7 +175,7 @@ function Dashboard({
   }, [rows, sortKey, sortDir, expFilter]);
 
   function downloadCsv() {
-    const cols = ["제출시각", "이름", "소속", "직무", "직급"];
+    const cols = ["제출시각", "이름", "소속", "직급"];
     const qCols = ALL_QUESTIONS.filter(
       (q) => !["org", "job", "rank", "name"].includes(q.id)
     );
@@ -190,7 +189,6 @@ function Dashboard({
         fmtDate(r.created_at),
         r.respondent?.name || "",
         r.respondent?.org || "",
-        r.respondent?.job || "",
         r.respondent?.rank || "",
       ];
       for (const q of qCols) {
@@ -326,9 +324,8 @@ function Dashboard({
                     <th>소속</th>
                     <th>직무</th>
                     <th>직급</th>
-                    <th title="Q14 난이도 진단">수준</th>
+                    <th title="Q13 난이도 진단">수준</th>
                     <th title="Q5 AI 업무 활용">활용</th>
-                    <th title="Q13 목표 수준">목표</th>
                     <th>기대 (Q12)</th>
                   </tr>
                 </thead>
@@ -344,9 +341,6 @@ function Dashboard({
                       </td>
                       <td className="lv">
                         <LevelBadge qid="q5" answer={r.answers?.q5} />
-                      </td>
-                      <td className="lv">
-                        <LevelBadge qid="q13" answer={r.answers?.q13} />
                       </td>
                       <td>
                         <div className="tags">

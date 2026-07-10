@@ -89,13 +89,12 @@ export default function SurveyPage() {
     try {
       const respondent = {
         org: (values.org as string) || "",
-        job: (values.job as string) || "",
         rank: (values.rank as string) || "",
         name: (values.name as string) || "",
       };
       const answers: Record<string, unknown> = {};
       for (const q of ALL_QUESTIONS) {
-        if (["org", "job", "rank", "name"].includes(q.id)) continue;
+        if (["org", "rank", "name"].includes(q.id)) continue;
         const v = values[q.id];
         if (v === undefined) continue;
         if (Array.isArray(v)) {

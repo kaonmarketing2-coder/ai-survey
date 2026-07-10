@@ -22,7 +22,7 @@ export interface Section {
 
 export const SURVEY_TITLE = "AI 활용 수준 사전 진단 Survey";
 export const SURVEY_DESC =
-  "이번 교육 설계를 위한 사전 진단입니다. 솔직하게 응답해 주시면 수준에 맞는 교육을 준비하는 데 큰 도움이 됩니다. (약 3~5분 소요)";
+  "효과적인 AI 교육 설계를 위한 사전 진단입니다. 해당 내용은 단순 교육 커리큘럼 구성을 위한 참고자료로 활용될 예정이오니, 현재 본인 상황에 맞추어 솔직하게 응답해 주세요.";
 
 export const SECTIONS: Section[] = [
   {
@@ -30,8 +30,7 @@ export const SECTIONS: Section[] = [
     title: "1. 기본 정보",
     questions: [
       { id: "org", label: "소속", type: "text", required: true, placeholder: "예: 마케팅팀" },
-      { id: "job", label: "직무", type: "text", required: true, placeholder: "예: 콘텐츠 기획" },
-      { id: "rank", label: "직급", type: "text", required: true, placeholder: "예: 대리" },
+      { id: "rank", label: "직급", type: "text", required: true, placeholder: "예: 매니저" },
       {
         id: "name",
         label: "이름",
@@ -268,20 +267,6 @@ export const SECTIONS: Section[] = [
           "기타",
         ],
       },
-      {
-        id: "q13",
-        no: "Q13",
-        label: "교육 종료 후 어느 수준까지 도달하고 싶습니까?",
-        type: "single",
-        required: true,
-        options: [
-          "① AI를 편하게 사용할 수 있는 수준",
-          "② 업무를 AI와 함께 처리하는 수준",
-          "③ 내 업무용 Agent를 만들 수 있는 수준",
-          "④ 부서 업무를 자동화하는 수준",
-          "⑤ 다른 직원들에게 알려줄 수 있는 수준",
-        ],
-      },
     ],
   },
   {
@@ -290,7 +275,7 @@ export const SECTIONS: Section[] = [
     questions: [
       {
         id: "q14",
-        no: "Q14",
+        no: "Q13",
         label: "아래 중 본인에게 가장 가까운 수준을 선택해주세요.",
         type: "single",
         required: true,
@@ -311,7 +296,7 @@ export const SECTIONS: Section[] = [
     questions: [
       {
         id: "q15",
-        no: "Q15",
+        no: "Q14",
         label: "AI 교육에 대해 바라는 점이나 요청사항이 있다면 자유롭게 작성해주세요.",
         hint: "주관식",
         type: "textarea",
@@ -325,11 +310,10 @@ export const SECTIONS: Section[] = [
 export const ALL_QUESTIONS: Question[] = SECTIONS.flatMap((s) => s.questions);
 
 // 프로필(기본 정보) 필드 id
-export const PROFILE_IDS = ["org", "job", "rank", "name"];
+export const PROFILE_IDS = ["org", "rank", "name"];
 
 // 결과 페이지에서 분포 카드로 보여줄 프로필 필드
 export const PROFILE_BREAKDOWN = [
   { id: "org", label: "소속" },
-  { id: "job", label: "직무" },
   { id: "rank", label: "직급" },
 ];

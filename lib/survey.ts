@@ -34,10 +34,10 @@ export const SECTIONS: Section[] = [
       { id: "rank", label: "직급", type: "text", required: true, placeholder: "예: 대리" },
       {
         id: "name",
-        label: "이름 (선택사항)",
-        hint: "익명으로 진행할 경우 비워두셔도 됩니다.",
+        label: "이름",
+        hint: "수업 분반 배정을 위해 필요하니 실명을 입력해 주세요.",
         type: "text",
-        required: false,
+        required: true,
         placeholder: "홍길동",
       },
     ],

@@ -15,4 +15,5 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 export const TABLE = "survey_responses";
-export const PUBLIC_VIEW = "survey_public";
+// 결과 조회는 관리자 암호가 필요한 보안 함수로만 가능합니다.
+export const ADMIN_RPC = "get_admin_responses";

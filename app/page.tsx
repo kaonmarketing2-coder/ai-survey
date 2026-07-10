@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import {
   SECTIONS,
   ALL_QUESTIONS,
@@ -135,9 +134,6 @@ export default function SurveyPage() {
           <h2>응답이 제출되었습니다. 감사합니다!</h2>
           <p>소중한 응답이 이번 교육 설계에 큰 도움이 됩니다.</p>
           <div className="row">
-            <Link className="btn" href="/results">
-              집계 결과 보기
-            </Link>
             <button
               className="btn secondary"
               onClick={() => {
@@ -213,9 +209,6 @@ function Header() {
         <span className="dot">AI</span>
         <span>사전 진단 Survey</span>
       </div>
-      <Link className="navlink" href="/results">
-        집계 결과 →
-      </Link>
     </div>
   );
 }

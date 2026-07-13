@@ -21,10 +21,10 @@ const PASS_KEY = "ai_survey_admin_pass";
 
 // 정렬 기준(수준/목표) — 단일선택 문항의 선택지 순번으로 수준을 계산
 const SORT_OPTIONS = [
-  { key: "q14", label: "수준 (Q13 난이도 진단)" },
+  { key: "q14", label: "수준 (Q14 난이도 진단)" },
   { key: "q5", label: "AI 업무 활용 (Q5)" },
   { key: "q1", label: "AI 사용 빈도 (Q1)" },
-  { key: "q7", label: "Agent 이해 (Q7)" },
+  { key: "q7", label: "Agent 인식 (Q8)" },
   { key: "name", label: "이름" },
   { key: "created", label: "제출 시각" },
 ];
@@ -141,7 +141,7 @@ function Dashboard({
   const total = rows.length;
   const [sortKey, setSortKey] = useState("q14");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const [expFilter, setExpFilter] = useState<string>(""); // Q12 기대 항목 필터
+  const [expFilter, setExpFilter] = useState<string>(""); // Q13 기대 항목 필터
 
   const q12 = qById("q12");
 
@@ -294,7 +294,7 @@ function Dashboard({
             </div>
 
             <div className="chips">
-              <span className="chips-label">기대(Q12) 필터:</span>
+              <span className="chips-label">기대(Q13) 필터:</span>
               <button
                 className={`chip${expFilter === "" ? " on" : ""}`}
                 onClick={() => setExpFilter("")}
@@ -324,9 +324,9 @@ function Dashboard({
                     <th>소속</th>
                     <th>직무</th>
                     <th>직급</th>
-                    <th title="Q13 난이도 진단">수준</th>
+                    <th title="Q14 난이도 진단">수준</th>
                     <th title="Q5 AI 업무 활용">활용</th>
-                    <th>기대 (Q12)</th>
+                    <th>기대 (Q13)</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -367,8 +367,11 @@ function Dashboard({
                 const info = trackInfo[t];
                 const label = t === "A" ? "심화" : t === "B" ? "표준" : "기초";
                 return (
-                  <button key={t} className={`tab tk-${t}${track === t ? " on" : ""}`} onClick={() => setTrack(t)}>
-                    Track {t} · {label}
+                  <button key={t} className={`tab${track === t ? " on" : ""}`} onClick={() => setTrack(t)}>
+                    <span className="tab-t">
+                      <i className={`tdot tk-${t}`} />
+                      Track {t} · {label}
+                    </span>
                     <span className="tab-n">
                       {info.count}명{info.count > 0 && ` · ${info.min}~${info.max}점`}
                     </span>
@@ -430,12 +433,11 @@ function Dashboard({
                   <tr>
                     <th>이름</th>
                     <th>소속</th>
-                    <th>직무</th>
                     <th>직급</th>
                     <th title="Q14 40% + Q5 20% + Q1 10% + Q8·Q9 10% + 고급 경험(Q3·Q6) 20% → 0~100">점수</th>
                     <th title="Q14 난이도 진단">수준</th>
                     <th title="Q5 AI 업무 활용">활용</th>
-                    <th>기대 (Q13)</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -449,8 +451,7 @@ function Dashboard({
                           <span className={`tk-chip tk-${trackMap.get(r.id)}`}>{trackMap.get(r.id)}</span>
                         )}
                       </td>
-                      <td>{r.respondent?.org || "-"}</td>
-                      <td>{r.respondent?.job || "-"}</td>
+                      <td className="org" title={r.respondent?.org || ""}>{r.respondent?.org || "-"}</td>
                       <td>{r.respondent?.rank || "-"}</td>
                       <td className="lv">
                         <ScoreBadge r={r} />
@@ -461,18 +462,10 @@ function Dashboard({
                       <td className="lv">
                         <LevelBadge qid="q5" answer={r.answers?.q5} />
                       </td>
-                      <td>
-                        <div className="tags">
-                          {Array.isArray(r.answers?.q12) && r.answers.q12.length ? (
-                            r.answers.q12.map((t: string) => (
-                              <span className="tag" key={t}>
-                                {t}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="muted small">-</span>
-                          )}
-                        </div>
+                      <td className="lv">
+                        <button className="detail-btn" onClick={() => setSelected(r)}>
+                          상세 응답보기
+                        </button>
                       </td>
                     </tr>
                   ))}

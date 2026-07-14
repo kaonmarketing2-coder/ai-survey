@@ -224,6 +224,13 @@ function Dashboard({
     return info;
   }, [rows, trackMap]);
 
+  // 선택된 Track 소속만 (전체 탭이면 전원) — 명단·분포·문항 집계 공통 기준
+  const trackRows = useMemo(
+    () => (track === "all" ? rows : rows.filter((r) => trackMap.get(r.id) === track)),
+    [rows, track, trackMap]
+  );
+  const tTotal = trackRows.length;
+
   const roster = useMemo(() => {
     let list = [...rows];
     if (track !== "all") {
@@ -469,9 +476,15 @@ function Dashboard({
             </div>
           </section>
 
+          {track !== "all" && (
+            <div className="scope-note">
+              아래 분포와 문항별 집계는 <b>Track {track} 소속 {tTotal}명</b> 기준입니다. 전체 기준으로 보려면 [전체] 탭을 선택하세요.
+            </div>
+          )}
+
           {/* 응답자 분포 */}
           <section className="section">
-            <h2>응답자 분포</h2>
+            <h2>응답자 분포{track !== "all" && ` — Track ${track}`}</h2>
             <div className="rule" />
             <div className="q">
               <div className="q-head">
@@ -480,7 +493,7 @@ function Dashboard({
                 </div>
                 <div className="q-hint">소속(팀) 응답을 본부 단위로 묶은 분포. 매칭되지 않은 팀은 "미분류"로 표시됩니다.</div>
               </div>
-              <Bars data={divisionDist(rows)} total={total} alt />
+              <Bars data={divisionDist(trackRows)} total={tTotal} alt />
             </div>
             {PROFILE_BREAKDOWN.map((p) => (
               <div className="q" key={p.id}>
@@ -489,7 +502,7 @@ function Dashboard({
                     <span>{p.label}별</span>
                   </div>
                 </div>
-                <Bars data={profileDist(rows, p.id)} total={total} alt />
+                <Bars data={profileDist(trackRows, p.id)} total={tTotal} alt />
               </div>
             ))}
           </section>
@@ -497,10 +510,10 @@ function Dashboard({
           {/* 문항별 집계 */}
           {SECTIONS.filter((s) => s.id !== "profile").map((sec) => (
             <section className="section" key={sec.id}>
-              <h2>{sec.title}</h2>
+              <h2>{sec.title}{track !== "all" && ` — Track ${track}`}</h2>
               <div className="rule" />
               {sec.questions.map((q) => (
-                <ResultBlock key={q.id} q={q} rows={rows} total={total} />
+                <ResultBlock key={q.id} q={q} rows={trackRows} total={tTotal} />
               ))}
             </section>
           ))}

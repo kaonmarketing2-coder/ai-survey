@@ -379,6 +379,12 @@ table.roster td.lv { text-align: center; }
 .tk-chip.tk-C, .tdot.tk-C { background: var(--muted); }
 
 
+.scope-note {
+  background: var(--brand-soft); border: 1px solid var(--brand);
+  color: var(--brand-ink); border-radius: 10px;
+  padding: 10px 14px; font-size: 13px; margin-bottom: 14px;
+}
+
 .name-btn {
   font: inherit; font-weight: 700; color: var(--brand-ink);
   background: none; border: none; padding: 0; cursor: pointer;

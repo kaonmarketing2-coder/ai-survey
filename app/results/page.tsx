@@ -77,7 +77,7 @@ function advExp(answers: Record<string, any>): number {
 }
 
 // gap: 자가진단(Q14)과 나머지 신호의 차이가 0.3 이상이면 분반 검토 표시
-function levelScore(r: Row): { score: number; gap: boolean; self: number } {
+function levelScore(r: Row): { score: number; gap: boolean; self: number; others: number } {
   const self = norm("q14", r.answers?.q14);
   const others =
     (norm("q5", r.answers?.q5) * 0.2 +
@@ -87,7 +87,17 @@ function levelScore(r: Row): { score: number; gap: boolean; self: number } {
       advExp(r.answers || {}) * 0.2) /
     0.6;
   const score = Math.round((self * 0.4 + others * 0.6) * 100);
-  return { score, gap: Math.abs(self - others) >= 0.3, self };
+  return { score, gap: Math.abs(self - others) >= 0.3, self, others };
+}
+
+// 응답자가 실제 체크한 고급 경험 항목 목록
+function advExpList(answers: Record<string, any>): string[] {
+  const a3: string[] = Array.isArray(answers?.q3) ? answers.q3 : [];
+  const a6: string[] = Array.isArray(answers?.q6) ? answers.q6 : [];
+  return [
+    ...ADV_Q3.filter((o) => a3.includes(o)),
+    ...ADV_Q6.filter((o) => a6.includes(o)),
+  ];
 }
 
 export default function ResultsPage() {
@@ -193,6 +203,7 @@ function Dashboard({
   const [expFilter, setExpFilter] = useState<string>(""); // Q13 기대 항목 필터
   const [track, setTrack] = useState<"all" | "A" | "B" | "C">("all");
   const [selected, setSelected] = useState<Row | null>(null); // 개별 응답 보기
+  const [scoreDetail, setScoreDetail] = useState<Row | null>(null); // 점수 구성/⚠ 사유 보기
 
   const q12 = qById("q12");
 
@@ -461,7 +472,7 @@ function Dashboard({
                       <td className="org" title={r.respondent?.org || ""}>{r.respondent?.org || "-"}</td>
                       <td>{r.respondent?.rank || "-"}</td>
                       <td className="lv">
-                        <ScoreBadge r={r} />
+                        <ScoreBadge r={r} onClick={() => setScoreDetail(r)} />
                       </td>
                       <td className="lv">
                         <LevelBadge qid="q14" answer={r.answers?.q14} />
@@ -527,7 +538,92 @@ function Dashboard({
           onClose={() => setSelected(null)}
         />
       )}
+
+      {scoreDetail && (
+        <ScoreInfoModal r={scoreDetail} onClose={() => setScoreDetail(null)} />
+      )}
     </main>
+  );
+}
+
+// 점수 구성 + ⚠ 사유 모달
+function ScoreInfoModal({ r, onClose }: { r: Row; onClose: () => void }) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+
+  const sc = levelScore(r);
+  const selfPct = Math.round(sc.self * 100);
+  const othersPct = Math.round(sc.others * 100);
+  const expList = advExpList(r.answers || {});
+
+  const rows: { label: string; idx: number; max: number; weight: string }[] = [
+    { label: "난이도 자가진단 (Q14)", idx: optIndex("q14", r.answers?.q14), max: 8, weight: "40%" },
+    { label: "AI 업무 활용 (Q5)", idx: optIndex("q5", r.answers?.q5), max: 6, weight: "20%" },
+    { label: "AI 사용 빈도 (Q1)", idx: optIndex("q1", r.answers?.q1), max: 5, weight: "10%" },
+    { label: "Agent 인식 (Q8)", idx: optIndex("q7", r.answers?.q7), max: 5, weight: "5%" },
+    { label: "자동화 인식 (Q9)", idx: optIndex("q8", r.answers?.q8), max: 5, weight: "5%" },
+  ];
+
+  return (
+    <div className="modal-bg" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="modal sm" onClick={(e) => e.stopPropagation()}>
+        <div className="m-head">
+          <div className="m-id">
+            <div className="m-name">{r.respondent?.name || "-"} · 종합 {sc.score}점</div>
+            <div className="m-sub">{r.respondent?.org || "-"} · {r.respondent?.rank || "-"}</div>
+          </div>
+          <button className="m-close" onClick={onClose} aria-label="닫기">✕</button>
+        </div>
+        <div className="m-body">
+          {sc.gap ? (
+            <div className="gap-note">
+              <b>⚠ 분반 시 확인 권장</b>
+              <p>
+                {sc.self > sc.others
+                  ? `자가진단이 실제 경험 신호보다 크게 높습니다 (자가진단 환산 ${selfPct}점 vs 경험·활용 신호 ${othersPct}점). 스스로 평가한 수준(Q14)에 비해 고급 기능 사용 경험이 적어, 상위 Track 배정 시 확인이 필요합니다.`
+                  : `자가진단이 실제 경험 신호보다 크게 낮습니다 (자가진단 환산 ${selfPct}점 vs 경험·활용 신호 ${othersPct}점). 경험·활용 신호는 높은데 낮은 단계를 선택한 겸손 응답일 가능성이 있어, 상향 배정 검토를 권장합니다.`}
+              </p>
+            </div>
+          ) : (
+            <div className="gap-note ok">
+              자가진단(환산 {selfPct}점)과 경험·활용 신호({othersPct}점)가 대체로 일치합니다.
+            </div>
+          )}
+
+          <div className="m-sec">
+            <div className="m-sec-t">점수 구성</div>
+            <table className="score-table">
+              <tbody>
+                {rows.map((x) => (
+                  <tr key={x.label}>
+                    <td>{x.label}</td>
+                    <td className="v">{x.idx ? `${x.idx} / ${x.max}단계` : "-"}</td>
+                    <td className="w">{x.weight}</td>
+                  </tr>
+                ))}
+                <tr>
+                  <td>고급 기능 실경험 (Q3·Q6)</td>
+                  <td className="v">{expList.length}개 {expList.length >= 6 && "(만점)"}</td>
+                  <td className="w">20%</td>
+                </tr>
+              </tbody>
+            </table>
+            {expList.length > 0 && (
+              <div className="tags" style={{ marginTop: 8 }}>
+                {expList.map((t) => (
+                  <span className="tag" key={t}>{t}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -616,14 +712,15 @@ function DetailModal({
   );
 }
 
-function ScoreBadge({ r }: { r: Row }) {
+function ScoreBadge({ r, onClick }: { r: Row; onClick?: () => void }) {
   const { score, gap } = levelScore(r);
   return (
     <span
-      className="score-badge"
+      className={`score-badge${onClick ? " clickable" : ""}`}
+      onClick={onClick}
       title={
-        "종합 점수 " + score + "점 (자가진단 40% + 활용·빈도·인식 30% + 고급 경험 30%)" +
-        (gap ? "\n⚠ 자가진단과 실제 경험 신호의 차이가 큼 — 분반 시 확인 권장" : "")
+        "종합 점수 " + score + "점 — 클릭하면 점수 구성을 볼 수 있습니다" +
+        (gap ? "\n⚠ 자가진단과 실제 경험 신호의 차이가 큼 — 클릭해서 사유 확인" : "")
       }
     >
       {score}

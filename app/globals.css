@@ -350,6 +350,28 @@ table.roster td.lv { text-align: center; }
   font-variant-numeric: tabular-nums; cursor: help;
 }
 .score-badge .gap { font-style: normal; font-size: 12px; line-height: 1; }
+.score-badge.clickable { cursor: pointer; }
+.score-badge.clickable:hover { filter: brightness(1.12); }
+
+/* 점수 구성 모달 */
+.modal.sm { max-width: 480px; }
+.gap-note {
+  border-left: 3px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 9%, var(--panel));
+  border-radius: 0 10px 10px 0; padding: 11px 14px; font-size: 13.5px;
+  margin-top: 14px;
+}
+.gap-note b { color: var(--danger); display: block; margin-bottom: 3px; }
+.gap-note p { margin: 0; }
+.gap-note.ok {
+  border-left-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 9%, var(--panel));
+}
+.score-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.score-table td { padding: 7px 4px; border-bottom: 1px dashed var(--border); }
+.score-table tr:last-child td { border-bottom: none; }
+.score-table .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+.score-table .w { text-align: right; color: var(--muted); font-size: 12px; width: 44px; }
 
 /* ---- Track 탭 ---- */
 .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; }

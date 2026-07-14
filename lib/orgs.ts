@@ -49,10 +49,10 @@ const EXACT: Record<string, string> = {
 
   // PI그룹
   "pi팀": "PI그룹",
-  "자동화솔루션팀": "PI그룹",
   "개발관리팀": "PI그룹",
 
   // Risk Management본부
+  "자동화솔루션팀": "Risk Management본부",
   "품질관리팀": "Risk Management본부",
   "qa팀": "Risk Management본부",
   "cs팀": "Risk Management본부",
@@ -74,7 +74,7 @@ export function orgDivision(org: string): string {
   if (n.includes("sqa") || n.includes("hqa")) return "Risk Management본부";
   if (n.includes("품질")) return "Risk Management본부";
   if (n.includes("제조")) return "Risk Management본부"; // 가정: 제조기술/제조관리 → RM본부
-  if (n.includes("자동화")) return "PI그룹";
+  if (n.includes("자동화")) return "Risk Management본부";
   if (n.includes("emea") || n.includes("apme")) return "영업본부";
   if (n.includes("사업그룹") || n.includes("영업")) return "영업본부";
   if (n.includes("pm")) return "PM본부";

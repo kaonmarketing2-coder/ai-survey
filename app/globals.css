@@ -378,14 +378,6 @@ table.roster td.lv { text-align: center; }
 .tk-chip.tk-B, .tdot.tk-B { background: var(--accent); }
 .tk-chip.tk-C, .tdot.tk-C { background: var(--muted); }
 
-/* 상세 응답보기 버튼 */
-.detail-btn {
-  font: inherit; font-size: 12px; font-weight: 700; color: var(--brand-ink);
-  background: var(--panel); border: 1px solid var(--border-strong);
-  border-radius: 8px; padding: 5px 10px; cursor: pointer; white-space: nowrap;
-  transition: border-color .12s, background .12s;
-}
-.detail-btn:hover { border-color: var(--brand); background: var(--brand-soft); }
 
 .name-btn {
   font: inherit; font-weight: 700; color: var(--brand-ink);

@@ -9,6 +9,7 @@ import {
   type Question,
 } from "@/lib/survey";
 import { supabase, ADMIN_RPC } from "@/lib/supabase";
+import { DIVISIONS, orgDivision } from "@/lib/orgs";
 
 interface Row {
   id: string;
@@ -437,7 +438,6 @@ function Dashboard({
                     <th title="Q14 40% + Q5 20% + Q1 10% + Q8·Q9 10% + 고급 경험(Q3·Q6) 20% → 0~100">점수</th>
                     <th title="Q14 난이도 진단">수준</th>
                     <th title="Q5 AI 업무 활용">활용</th>
-                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -462,11 +462,6 @@ function Dashboard({
                       <td className="lv">
                         <LevelBadge qid="q5" answer={r.answers?.q5} />
                       </td>
-                      <td className="lv">
-                        <button className="detail-btn" onClick={() => setSelected(r)}>
-                          상세 응답보기
-                        </button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -478,6 +473,15 @@ function Dashboard({
           <section className="section">
             <h2>응답자 분포</h2>
             <div className="rule" />
+            <div className="q">
+              <div className="q-head">
+                <div className="q-label">
+                  <span>본부별</span>
+                </div>
+                <div className="q-hint">소속(팀) 응답을 본부 단위로 묶은 분포. 매칭되지 않은 팀은 "미분류"로 표시됩니다.</div>
+              </div>
+              <Bars data={divisionDist(rows)} total={total} alt />
+            </div>
             {PROFILE_BREAKDOWN.map((p) => (
               <div className="q" key={p.id}>
                 <div className="q-head">
@@ -749,6 +753,22 @@ function choiceDist(rows: Row[], q: Question): { label: string; count: number }[
     }
   }
   return (q.options || []).map((o) => ({ label: o, count: counts.get(o) || 0 }));
+}
+
+// 본부별 분포: DIVISIONS 순서 고정, 미분류는 맨 뒤
+function divisionDist(rows: Row[]): { label: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    const d = orgDivision(r.respondent?.org || "");
+    counts.set(d, (counts.get(d) || 0) + 1);
+  }
+  const out: { label: string; count: number }[] = [];
+  for (const d of DIVISIONS) {
+    out.push({ label: d, count: counts.get(d) || 0 });
+  }
+  const etc = counts.get("미분류") || 0;
+  if (etc > 0) out.push({ label: "미분류 (매핑 확인 필요)", count: etc });
+  return out;
 }
 
 function profileDist(rows: Row[], key: string): { label: string; count: number }[] {

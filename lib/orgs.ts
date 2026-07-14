@@ -23,41 +23,41 @@ const EXACT: Record<string, string> = {
   "국내1사업그룹": "영업본부",
   "국내2사업그룹": "영업본부",
   "공공사업파트": "영업본부",
-  "bd팀": "영업본부",      // 가정: 사업개발 → 영업본부
-  "마케팅팀": "영업본부",   // 가정: 영업본부 산하
-  "cs팀": "영업본부",      // 가정: 고객지원 → 영업본부
+  "bd팀": "영업본부", // 가정: 사업개발 → 영업본부
 
   // PM본부
   "pm1팀": "PM본부",
   "pm2팀": "PM본부",
   "pmo": "PM본부",
-  "개발관리팀": "PM본부",   // 가정: 개발 프로젝트 관리 → PM본부
-  "디자인팀": "PM본부",     // 가정: 제품 UI/UX → PM본부
+  "디자인팀": "PM본부", // 가정: 제품 UI/UX → PM본부
 
   // Corporate실
   "기획팀": "Corporate실",
   "법무": "Corporate실",
-  "ip팀": "Corporate실",
-  "ipr팀": "Corporate실",
-  "esg팀": "Corporate실",     // 가정
+  "마케팅팀": "Corporate실",
+  "전산팀": "Corporate실",
   "투자운용팀": "Corporate실", // 가정
 
   // 경영지원본부
   "인사팀": "경영지원본부",
   "총무파트": "경영지원본부",
   "회계관리팀": "경영지원본부",
-  "전산팀": "경영지원본부",   // 가정: 사내 IT → 경영지원 (PI그룹일 수도)
-  "구매기획팀": "경영지원본부", // 가정: 구매/물류/자재 → 경영지원 (별도 SCM 조직이면 수정)
-  "물류팀": "경영지원본부",
-  "자재팀": "경영지원본부",
+  "ip팀": "경영지원본부",
+  "ipr팀": "경영지원본부", // IP팀과 동일 조직으로 간주
 
   // PI그룹
   "pi팀": "PI그룹",
   "자동화솔루션팀": "PI그룹",
+  "개발관리팀": "PI그룹",
 
   // Risk Management본부
   "품질관리팀": "Risk Management본부",
   "qa팀": "Risk Management본부",
+  "cs팀": "Risk Management본부",
+  "esg팀": "Risk Management본부",
+  "구매기획팀": "Risk Management본부",
+  "물류팀": "Risk Management본부",
+  "자재팀": "Risk Management본부",
 };
 
 function normalize(org: string): string {

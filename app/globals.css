@@ -399,6 +399,31 @@ table.roster td.lv { text-align: center; }
 .tk-chip.tk-A, .tdot.tk-A { background: var(--brand); }
 .tk-chip.tk-B, .tdot.tk-B { background: var(--accent); }
 .tk-chip.tk-C, .tdot.tk-C { background: var(--muted); }
+.tk-chip.manual { box-shadow: 0 0 0 2px var(--hl, #b8860b); }
+
+/* Track 이동 컨트롤 (개별 응답 모달) */
+.m-track {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 13px; margin-top: 14px;
+}
+.m-track-l { font-size: 12.5px; font-weight: 800; color: var(--muted); margin-right: 2px; }
+.m-track-btn {
+  font: inherit; font-size: 13px; font-weight: 800;
+  width: 34px; height: 30px; border-radius: 8px; cursor: pointer;
+  color: var(--text); background: var(--panel); border: 1px solid var(--border-strong);
+  transition: border-color .12s, background .12s;
+}
+.m-track-btn:hover:not(:disabled) { border-color: var(--brand); }
+.m-track-btn.on { background: var(--brand); border-color: var(--brand); color: #fff; cursor: default; }
+.m-track-btn:disabled:not(.on) { opacity: .5; cursor: not-allowed; }
+.m-track-reset {
+  font: inherit; font-size: 12px; font-weight: 700; color: var(--muted);
+  background: none; border: 1px solid var(--border); border-radius: 999px;
+  padding: 5px 11px; cursor: pointer;
+}
+.m-track-reset:hover:not(:disabled) { border-color: var(--border-strong); color: var(--text); }
+.m-track-hint { font-size: 12px; color: var(--muted); margin-left: auto; }
 
 
 .scope-note {

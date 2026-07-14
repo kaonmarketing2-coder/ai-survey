@@ -16,6 +16,7 @@ interface Row {
   created_at: string;
   respondent: Record<string, string>;
   answers: Record<string, any>;
+  track_override?: "A" | "B" | "C" | null; // 관리자 수동 배정
 }
 
 const PASS_KEY = "ai_survey_admin_pass";
@@ -185,15 +186,24 @@ export default function ResultsPage() {
   }
 
   // ---- 대시보드 ----
-  return <Dashboard rows={rows || []} onRefresh={() => fetchRows(pass)} onLogout={logout} />;
+  return (
+    <Dashboard
+      rows={rows || []}
+      passcode={pass}
+      onRefresh={() => fetchRows(pass)}
+      onLogout={logout}
+    />
+  );
 }
 
 function Dashboard({
   rows,
+  passcode,
   onRefresh,
   onLogout,
 }: {
   rows: Row[];
+  passcode: string;
   onRefresh: () => void;
   onLogout: () => void;
 }) {
@@ -230,6 +240,35 @@ function Dashboard({
     return m;
   }, [rows]);
 
+  // 자동 배정 위에 관리자 수동 배정(track_override)을 덮어쓴 최종 맵
+  const trackAutoMap = trackMap;
+  const finalTrackMap = useMemo(() => {
+    const m = new Map(trackAutoMap);
+    for (const r of rows) {
+      if (r.track_override === "A" || r.track_override === "B" || r.track_override === "C") {
+        m.set(r.id, r.track_override);
+      }
+    }
+    return m;
+  }, [rows, trackAutoMap]);
+
+  // 수동 Track 이동 (관리자 암호로 DB에 기록, 새로고침해도 유지)
+  const [moving, setMoving] = useState(false);
+  async function moveTrack(rid: string, t: "A" | "B" | "C" | null) {
+    setMoving(true);
+    const { error } = await supabase.rpc("set_track_override", {
+      passcode,
+      response_id: rid,
+      new_track: t,
+    });
+    setMoving(false);
+    if (error) {
+      alert("Track 이동에 실패했습니다: " + error.message);
+    } else {
+      onRefresh();
+    }
+  }
+
   const trackInfo = useMemo(() => {
     const info = {
       A: { count: 0, min: 101, max: -1 },
@@ -237,7 +276,7 @@ function Dashboard({
       C: { count: 0, min: 101, max: -1 },
     };
     for (const r of rows) {
-      const t = trackMap.get(r.id);
+      const t = finalTrackMap.get(r.id);
       if (!t) continue;
       const s = levelScore(r).score;
       info[t].count++;
@@ -245,19 +284,19 @@ function Dashboard({
       info[t].max = Math.max(info[t].max, s);
     }
     return info;
-  }, [rows, trackMap]);
+  }, [rows, finalTrackMap]);
 
   // 선택된 Track 소속만 (전체 탭이면 전원) — 명단·분포·문항 집계 공통 기준
   const trackRows = useMemo(
-    () => (track === "all" ? rows : rows.filter((r) => trackMap.get(r.id) === track)),
-    [rows, track, trackMap]
+    () => (track === "all" ? rows : rows.filter((r) => finalTrackMap.get(r.id) === track)),
+    [rows, track, finalTrackMap]
   );
   const tTotal = trackRows.length;
 
   const roster = useMemo(() => {
     let list = [...rows];
     if (track !== "all") {
-      list = list.filter((r) => trackMap.get(r.id) === track);
+      list = list.filter((r) => finalTrackMap.get(r.id) === track);
     }
     if (expFilter) {
       list = list.filter((r) => {
@@ -287,7 +326,7 @@ function Dashboard({
       return sortDir === "asc" ? (av as number) - (bv as number) : (bv as number) - (av as number);
     });
     return list;
-  }, [rows, sortKey, sortDir, expFilter, track, trackMap]);
+  }, [rows, sortKey, sortDir, expFilter, track, finalTrackMap]);
 
   function downloadCsv() {
     const cols = ["제출시각", "이름", "소속", "직급", "종합점수", "Track", "점수확인필요"];
@@ -307,7 +346,7 @@ function Dashboard({
         r.respondent?.org || "",
         r.respondent?.rank || "",
         String(sc.score),
-        trackMap.get(r.id) || "",
+        (finalTrackMap.get(r.id) || "") + (r.track_override ? "(수동)" : ""),
         sc.gap ? "확인" : "",
       ];
       for (const q of qCols) {
@@ -458,6 +497,7 @@ function Dashboard({
               ⚠ = 자가진단과 실제 경험 신호가 크게 어긋나 분반 시 확인 권장.
               Track A = Agent 개념 이해(Q8 ④~⑤) + Agent 제작 실경험(Q3 'Agent 생성' 또는 Q6 'Agent 제작') + 자가진단 ⑦~⑧을 모두 충족.
               Track B/C = 나머지 인원을 종합 점수 순으로 이등분(상위 B · 하위 C).
+              이름을 클릭하면 응답 내역 확인과 함께 Track을 수동으로 이동할 수 있습니다 (✎ = 수동 배정).
             </div>
 
             <div className="table-wrap">
@@ -480,7 +520,13 @@ function Dashboard({
                           {r.respondent?.name || "-"}
                         </button>
                         {track === "all" && (
-                          <span className={`tk-chip tk-${trackMap.get(r.id)}`}>{trackMap.get(r.id)}</span>
+                          <span
+                            className={`tk-chip tk-${finalTrackMap.get(r.id)}${r.track_override ? " manual" : ""}`}
+                            title={r.track_override ? "관리자 수동 배정" : undefined}
+                          >
+                            {finalTrackMap.get(r.id)}
+                            {r.track_override ? "✎" : ""}
+                          </span>
                         )}
                       </td>
                       <td className="org" title={r.respondent?.org || ""}>{r.respondent?.org || "-"}</td>
@@ -545,13 +591,21 @@ function Dashboard({
         </>
       )}
 
-      {selected && (
-        <DetailModal
-          r={selected}
-          track={trackMap.get(selected.id) || "-"}
-          onClose={() => setSelected(null)}
-        />
-      )}
+      {selected &&
+        (() => {
+          const fresh = rows.find((x) => x.id === selected.id) || selected;
+          return (
+            <DetailModal
+              r={fresh}
+              track={finalTrackMap.get(fresh.id) || "-"}
+              autoTrack={trackAutoMap.get(fresh.id) || "-"}
+              isOverride={!!fresh.track_override}
+              moving={moving}
+              onMove={(t) => moveTrack(fresh.id, t)}
+              onClose={() => setSelected(null)}
+            />
+          );
+        })()}
 
       {scoreDetail && (
         <ScoreInfoModal r={scoreDetail} onClose={() => setScoreDetail(null)} />
@@ -641,14 +695,22 @@ function ScoreInfoModal({ r, onClose }: { r: Row; onClose: () => void }) {
   );
 }
 
-// 응답자 개별 응답 내역 모달
+// 응답자 개별 응답 내역 모달 (+ 관리자 Track 이동)
 function DetailModal({
   r,
   track,
+  autoTrack,
+  isOverride,
+  moving,
+  onMove,
   onClose,
 }: {
   r: Row;
   track: string;
+  autoTrack: string;
+  isOverride: boolean;
+  moving: boolean;
+  onMove: (t: "A" | "B" | "C" | null) => void;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -683,6 +745,28 @@ function DetailModal({
         </div>
 
         <div className="m-body">
+          <div className="m-track">
+            <span className="m-track-l">Track 이동</span>
+            {(["A", "B", "C"] as const).map((t) => (
+              <button
+                key={t}
+                className={`m-track-btn${track === t ? " on" : ""}`}
+                disabled={moving || track === t}
+                onClick={() => onMove(t)}
+              >
+                {t}
+              </button>
+            ))}
+            {isOverride && (
+              <button className="m-track-reset" disabled={moving} onClick={() => onMove(null)}>
+                자동 배정(Track {autoTrack})으로 되돌리기
+              </button>
+            )}
+            <span className="m-track-hint">
+              {moving ? "저장 중…" : isOverride ? "관리자 수동 배정 상태" : "자동 배정 상태"}
+            </span>
+          </div>
+
           {SECTIONS.filter((s) => s.id !== "profile").map((sec) => (
             <div className="m-sec" key={sec.id}>
               <div className="m-sec-t">{sec.title}</div>

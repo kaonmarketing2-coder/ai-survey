@@ -8,6 +8,7 @@ export const DIVISIONS = [
   "경영지원본부",
   "PI그룹",
   "Risk Management본부",
+  "기타",
 ] as const;
 
 const EXACT: Record<string, string> = {
@@ -29,7 +30,6 @@ const EXACT: Record<string, string> = {
   "pm1팀": "PM본부",
   "pm2팀": "PM본부",
   "pmo": "PM본부",
-  "디자인팀": "PM본부", // 가정: 제품 UI/UX → PM본부
 
   // Corporate실
   "기획팀": "Corporate실",
@@ -37,13 +37,16 @@ const EXACT: Record<string, string> = {
   "마케팅팀": "Corporate실",
   "전산팀": "Corporate실",
   "투자운용팀": "Corporate실", // 가정
+  "인사팀": "Corporate실",
+  "총무파트": "Corporate실",
 
   // 경영지원본부
-  "인사팀": "경영지원본부",
-  "총무파트": "경영지원본부",
   "회계관리팀": "경영지원본부",
   "ip팀": "경영지원본부",
   "ipr팀": "경영지원본부", // IP팀과 동일 조직으로 간주
+
+  // 기타
+  "디자인팀": "기타",
 
   // PI그룹
   "pi팀": "PI그룹",
@@ -76,6 +79,6 @@ export function orgDivision(org: string): string {
   if (n.includes("emea") || n.includes("apme")) return "영업본부";
   if (n.includes("사업그룹") || n.includes("영업")) return "영업본부";
   if (n.includes("pm")) return "PM본부";
-  if (n.includes("디자인")) return "PM본부";
+  if (n.includes("디자인")) return "기타";
   return "미분류";
 }

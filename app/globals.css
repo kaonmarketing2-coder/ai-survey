@@ -339,6 +339,14 @@ table.roster td.lv { text-align: center; }
   background: var(--brand-soft); color: var(--brand-ink);
   border: 1px solid var(--brand);
 }
+.score-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  min-width: 34px; height: 24px; justify-content: center;
+  padding: 0 7px; border-radius: 7px; font-weight: 800; font-size: 13px;
+  background: var(--brand); color: #fff;
+  font-variant-numeric: tabular-nums; cursor: help;
+}
+.score-badge .gap { font-style: normal; font-size: 12px; line-height: 1; }
 .tags { display: flex; flex-wrap: wrap; gap: 4px; max-width: 320px; white-space: normal; }
 .tag {
   font-size: 11.5px; color: var(--accent);

@@ -21,6 +21,7 @@ const PASS_KEY = "ai_survey_admin_pass";
 
 // 정렬 기준(수준/목표) — 단일선택 문항의 선택지 순번으로 수준을 계산
 const SORT_OPTIONS = [
+  { key: "score", label: "종합 점수" },
   { key: "q14", label: "수준 (Q14 난이도 진단)" },
   { key: "q5", label: "AI 업무 활용 (Q5)" },
   { key: "q1", label: "AI 사용 빈도 (Q1)" },
@@ -39,6 +40,53 @@ function optIndex(qid: string, answer: unknown): number {
   if (!q || !q.options || typeof answer !== "string") return 0;
   const i = q.options.indexOf(answer);
   return i < 0 ? 0 : i + 1;
+}
+
+/* ---------- 종합 점수 (0~100) ----------
+   자가진단 Q14 40% + 활용 Q5 20% + 빈도 Q1 10%
+   + 인식 Q8·Q9 각 5% + 고급 기능 실경험(Q3·Q6) 20%          */
+
+// 고급 경험으로 인정하는 항목 (Q3 기능 경험 / Q6 경험 항목)
+const ADV_Q3 = ["MCP(Server) 연결", "Claude Code", "Agent 생성", "API 활용"];
+const ADV_Q6 = [
+  "반복되는 업무를 AI로 자동화",
+  "Python을 이용한 AI 활용",
+  "Claude Code 활용",
+  "MCP 활용",
+  "Agent 제작",
+  "API 연동",
+];
+
+// 선택지 순번을 0~1로 정규화
+function norm(qid: string, answer: unknown): number {
+  const q = qById(qid);
+  const n = q?.options?.length || 0;
+  const i = optIndex(qid, answer);
+  return n > 1 && i > 0 ? (i - 1) / (n - 1) : 0;
+}
+
+// 고급 경험 점수: 10개 항목 중 6개 이상이면 만점
+function advExp(answers: Record<string, any>): number {
+  const a3: string[] = Array.isArray(answers?.q3) ? answers.q3 : [];
+  const a6: string[] = Array.isArray(answers?.q6) ? answers.q6 : [];
+  const cnt =
+    ADV_Q3.filter((o) => a3.includes(o)).length +
+    ADV_Q6.filter((o) => a6.includes(o)).length;
+  return Math.min(cnt / 6, 1);
+}
+
+// gap: 자가진단(Q14)과 나머지 신호의 차이가 0.3 이상이면 분반 검토 표시
+function levelScore(r: Row): { score: number; gap: boolean; self: number } {
+  const self = norm("q14", r.answers?.q14);
+  const others =
+    (norm("q5", r.answers?.q5) * 0.2 +
+      norm("q1", r.answers?.q1) * 0.1 +
+      norm("q7", r.answers?.q7) * 0.05 +
+      norm("q8", r.answers?.q8) * 0.05 +
+      advExp(r.answers || {}) * 0.2) /
+    0.6;
+  const score = Math.round((self * 0.4 + others * 0.6) * 100);
+  return { score, gap: Math.abs(self - others) >= 0.3, self };
 }
 
 export default function ResultsPage() {
@@ -139,7 +187,7 @@ function Dashboard({
   onLogout: () => void;
 }) {
   const total = rows.length;
-  const [sortKey, setSortKey] = useState("q14");
+  const [sortKey, setSortKey] = useState("score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [expFilter, setExpFilter] = useState<string>(""); // Q13 기대 항목 필터
 
@@ -165,6 +213,9 @@ function Dashboard({
       } else if (sortKey === "created") {
         av = new Date(a.created_at).getTime();
         bv = new Date(b.created_at).getTime();
+      } else if (sortKey === "score") {
+        av = levelScore(a).score;
+        bv = levelScore(b).score;
       } else {
         av = optIndex(sortKey, a.answers?.[sortKey]);
         bv = optIndex(sortKey, b.answers?.[sortKey]);
@@ -175,7 +226,7 @@ function Dashboard({
   }, [rows, sortKey, sortDir, expFilter]);
 
   function downloadCsv() {
-    const cols = ["제출시각", "이름", "소속", "직급"];
+    const cols = ["제출시각", "이름", "소속", "직급", "종합점수", "점수확인필요"];
     const qCols = ALL_QUESTIONS.filter(
       (q) => !["org", "job", "rank", "name"].includes(q.id)
     );
@@ -185,11 +236,14 @@ function Dashboard({
     const lines = [cols.map(esc).join(",")];
 
     for (const r of rows) {
+      const sc = levelScore(r);
       const cells: string[] = [
         fmtDate(r.created_at),
         r.respondent?.name || "",
         r.respondent?.org || "",
         r.respondent?.rank || "",
+        String(sc.score),
+        sc.gap ? "확인" : "",
       ];
       for (const q of qCols) {
         const v = r.answers?.[q.id];
@@ -313,7 +367,9 @@ function Dashboard({
             </div>
 
             <div className="muted small" style={{ margin: "6px 0 10px" }}>
-              {roster.length}명 표시 중 {expFilter && `· "${expFilter}" 선택자`}
+              {roster.length}명 표시 중 {expFilter && `· "${expFilter}" 선택자 `}
+              — 종합 점수(0~100) = 자가진단 Q14 40% · 활용 Q5 20% · 빈도 Q1 10% · 인식 Q8+Q9 10% · 고급 경험(Q3·Q6의 MCP/Agent/API/Code/자동화 등) 20%.
+              ⚠ = 자가진단과 실제 경험 신호가 크게 어긋나 분반 시 확인 권장.
             </div>
 
             <div className="table-wrap">
@@ -324,6 +380,7 @@ function Dashboard({
                     <th>소속</th>
                     <th>직무</th>
                     <th>직급</th>
+                    <th title="Q14 40% + Q5 20% + Q1 10% + Q8·Q9 10% + 고급 경험(Q3·Q6) 20% → 0~100">점수</th>
                     <th title="Q14 난이도 진단">수준</th>
                     <th title="Q5 AI 업무 활용">활용</th>
                     <th>기대 (Q13)</th>
@@ -336,6 +393,9 @@ function Dashboard({
                       <td>{r.respondent?.org || "-"}</td>
                       <td>{r.respondent?.job || "-"}</td>
                       <td>{r.respondent?.rank || "-"}</td>
+                      <td className="lv">
+                        <ScoreBadge r={r} />
+                      </td>
                       <td className="lv">
                         <LevelBadge qid="q14" answer={r.answers?.q14} />
                       </td>
@@ -391,6 +451,22 @@ function Dashboard({
         </>
       )}
     </main>
+  );
+}
+
+function ScoreBadge({ r }: { r: Row }) {
+  const { score, gap } = levelScore(r);
+  return (
+    <span
+      className="score-badge"
+      title={
+        "종합 점수 " + score + "점 (자가진단 40% + 활용·빈도·인식 30% + 고급 경험 30%)" +
+        (gap ? "\n⚠ 자가진단과 실제 경험 신호의 차이가 큼 — 분반 시 확인 권장" : "")
+      }
+    >
+      {score}
+      {gap && <em className="gap">⚠</em>}
+    </span>
   );
 }
 

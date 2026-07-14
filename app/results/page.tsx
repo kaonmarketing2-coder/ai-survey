@@ -207,14 +207,26 @@ function Dashboard({
 
   const q12 = qById("q12");
 
-  // 종합 점수 내림차순 3등분 → Track A(심화) / B(표준) / C(기초)
+  // Track A(심화): 기준 충족자만 — Agent 개념 이해 + 제작 실경험 + 자가진단 상위 단계 모두 충족
+  // Track B/C: 나머지를 종합 점수 내림차순으로 이등분 (상위=B 표준, 하위=C 기초)
   const trackMap = useMemo(() => {
-    const sorted = [...rows].sort((a, b) => levelScore(b).score - levelScore(a).score);
-    const n = sorted.length;
-    const aEnd = Math.ceil(n / 3);
-    const bEnd = Math.ceil((2 * n) / 3);
+    const isTrackA = (r: Row): boolean => {
+      const concept = optIndex("q7", r.answers?.q7) >= 4; // Q8 Agent 개념 ④~⑤
+      const lvl = optIndex("q14", r.answers?.q14) >= 7; // Q14 ⑦ 자동화 경험 / ⑧ Agent 활용 중
+      const a3: string[] = Array.isArray(r.answers?.q3) ? r.answers.q3 : [];
+      const a6: string[] = Array.isArray(r.answers?.q6) ? r.answers.q6 : [];
+      const exp = a3.includes("Agent 생성") || a6.includes("Agent 제작"); // 실제 제작 경험
+      return concept && exp && lvl;
+    };
     const m = new Map<string, "A" | "B" | "C">();
-    sorted.forEach((r, i) => m.set(r.id, i < aEnd ? "A" : i < bEnd ? "B" : "C"));
+    const rest: Row[] = [];
+    for (const r of rows) {
+      if (isTrackA(r)) m.set(r.id, "A");
+      else rest.push(r);
+    }
+    rest.sort((a, b) => levelScore(b).score - levelScore(a).score);
+    const bEnd = Math.ceil(rest.length / 2);
+    rest.forEach((r, i) => m.set(r.id, i < bEnd ? "B" : "C"));
     return m;
   }, [rows]);
 
@@ -444,6 +456,8 @@ function Dashboard({
               {roster.length}명 표시 중 {expFilter && `· "${expFilter}" 선택자 `}
               — 종합 점수(0~100) = 자가진단 Q14 40% · 활용 Q5 20% · 빈도 Q1 10% · 인식 Q8+Q9 10% · 고급 경험(Q3·Q6의 MCP/Agent/API/Code/자동화 등) 20%.
               ⚠ = 자가진단과 실제 경험 신호가 크게 어긋나 분반 시 확인 권장.
+              Track A = Agent 개념 이해(Q8 ④~⑤) + Agent 제작 실경험(Q3 'Agent 생성' 또는 Q6 'Agent 제작') + 자가진단 ⑦~⑧을 모두 충족.
+              Track B/C = 나머지 인원을 종합 점수 순으로 이등분(상위 B · 하위 C).
             </div>
 
             <div className="table-wrap">

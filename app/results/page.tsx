@@ -190,11 +190,44 @@ function Dashboard({
   const [sortKey, setSortKey] = useState("score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [expFilter, setExpFilter] = useState<string>(""); // Q13 기대 항목 필터
+  const [track, setTrack] = useState<"all" | "A" | "B" | "C">("all");
+  const [selected, setSelected] = useState<Row | null>(null); // 개별 응답 보기
 
   const q12 = qById("q12");
 
+  // 종합 점수 내림차순 3등분 → Track A(심화) / B(표준) / C(기초)
+  const trackMap = useMemo(() => {
+    const sorted = [...rows].sort((a, b) => levelScore(b).score - levelScore(a).score);
+    const n = sorted.length;
+    const aEnd = Math.ceil(n / 3);
+    const bEnd = Math.ceil((2 * n) / 3);
+    const m = new Map<string, "A" | "B" | "C">();
+    sorted.forEach((r, i) => m.set(r.id, i < aEnd ? "A" : i < bEnd ? "B" : "C"));
+    return m;
+  }, [rows]);
+
+  const trackInfo = useMemo(() => {
+    const info = {
+      A: { count: 0, min: 101, max: -1 },
+      B: { count: 0, min: 101, max: -1 },
+      C: { count: 0, min: 101, max: -1 },
+    };
+    for (const r of rows) {
+      const t = trackMap.get(r.id);
+      if (!t) continue;
+      const s = levelScore(r).score;
+      info[t].count++;
+      info[t].min = Math.min(info[t].min, s);
+      info[t].max = Math.max(info[t].max, s);
+    }
+    return info;
+  }, [rows, trackMap]);
+
   const roster = useMemo(() => {
     let list = [...rows];
+    if (track !== "all") {
+      list = list.filter((r) => trackMap.get(r.id) === track);
+    }
     if (expFilter) {
       list = list.filter((r) => {
         const v = r.answers?.q12;
@@ -223,10 +256,10 @@ function Dashboard({
       return sortDir === "asc" ? (av as number) - (bv as number) : (bv as number) - (av as number);
     });
     return list;
-  }, [rows, sortKey, sortDir, expFilter]);
+  }, [rows, sortKey, sortDir, expFilter, track, trackMap]);
 
   function downloadCsv() {
-    const cols = ["제출시각", "이름", "소속", "직급", "종합점수", "점수확인필요"];
+    const cols = ["제출시각", "이름", "소속", "직급", "종합점수", "Track", "점수확인필요"];
     const qCols = ALL_QUESTIONS.filter(
       (q) => !["org", "job", "rank", "name"].includes(q.id)
     );
@@ -243,6 +276,7 @@ function Dashboard({
         r.respondent?.org || "",
         r.respondent?.rank || "",
         String(sc.score),
+        trackMap.get(r.id) || "",
         sc.gap ? "확인" : "",
       ];
       for (const q of qCols) {
@@ -325,6 +359,24 @@ function Dashboard({
             </div>
             <div className="rule" />
 
+            <div className="tabs">
+              <button className={`tab${track === "all" ? " on" : ""}`} onClick={() => setTrack("all")}>
+                전체 <span className="tab-n">{total}명</span>
+              </button>
+              {(["A", "B", "C"] as const).map((t) => {
+                const info = trackInfo[t];
+                const label = t === "A" ? "심화" : t === "B" ? "표준" : "기초";
+                return (
+                  <button key={t} className={`tab tk-${t}${track === t ? " on" : ""}`} onClick={() => setTrack(t)}>
+                    Track {t} · {label}
+                    <span className="tab-n">
+                      {info.count}명{info.count > 0 && ` · ${info.min}~${info.max}점`}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
             <div className="controls">
               <div className="ctrl">
                 <label>정렬 기준</label>
@@ -389,7 +441,14 @@ function Dashboard({
                 <tbody>
                   {roster.map((r) => (
                     <tr key={r.id}>
-                      <td className="nm">{r.respondent?.name || "-"}</td>
+                      <td className="nm">
+                        <button className="name-btn" onClick={() => setSelected(r)} title="클릭하면 응답 내역을 볼 수 있습니다">
+                          {r.respondent?.name || "-"}
+                        </button>
+                        {track === "all" && (
+                          <span className={`tk-chip tk-${trackMap.get(r.id)}`}>{trackMap.get(r.id)}</span>
+                        )}
+                      </td>
                       <td>{r.respondent?.org || "-"}</td>
                       <td>{r.respondent?.job || "-"}</td>
                       <td>{r.respondent?.rank || "-"}</td>
@@ -450,7 +509,100 @@ function Dashboard({
           ))}
         </>
       )}
+
+      {selected && (
+        <DetailModal
+          r={selected}
+          track={trackMap.get(selected.id) || "-"}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </main>
+  );
+}
+
+// 응답자 개별 응답 내역 모달
+function DetailModal({
+  r,
+  track,
+  onClose,
+}: {
+  r: Row;
+  track: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", h);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", h);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  const sc = levelScore(r);
+
+  return (
+    <div className="modal-bg" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="m-head">
+          <div className="m-id">
+            <div className="m-name">{r.respondent?.name || "(이름 없음)"}</div>
+            <div className="m-sub">
+              {r.respondent?.org || "-"} · {r.respondent?.rank || "-"} · 제출 {fmtDate(r.created_at)}
+            </div>
+          </div>
+          <div className="m-badges">
+            <span className="score-badge">{sc.score}{sc.gap && <em className="gap">⚠</em>}</span>
+            <span className={`tk-chip big tk-${track}`}>Track {track}</span>
+          </div>
+          <button className="m-close" onClick={onClose} aria-label="닫기">✕</button>
+        </div>
+
+        <div className="m-body">
+          {SECTIONS.filter((s) => s.id !== "profile").map((sec) => (
+            <div className="m-sec" key={sec.id}>
+              <div className="m-sec-t">{sec.title}</div>
+              {sec.questions.map((q) => {
+                const v = r.answers?.[q.id];
+                const other = r.answers?.[`${q.id}__other`];
+                return (
+                  <div className="m-q" key={q.id}>
+                    <div className="m-q-l">
+                      {q.no && <span className="q-no">{q.no}</span>}
+                      <span>{q.label}</span>
+                    </div>
+                    <div className="m-q-a">
+                      {Array.isArray(v) ? (
+                        v.length ? (
+                          <div className="tags">
+                            {v.map((t: string) => (
+                              <span className="tag" key={t}>{t}</span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="muted">무응답</span>
+                        )
+                      ) : typeof v === "string" && v.trim() !== "" ? (
+                        v
+                      ) : (
+                        <span className="muted">무응답</span>
+                      )}
+                      {typeof other === "string" && other.trim() !== "" && (
+                        <div className="m-other">기타 입력: {other}</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 

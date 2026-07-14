@@ -24,12 +24,11 @@ const EXACT: Record<string, string> = {
   "국내1사업그룹": "영업본부",
   "국내2사업그룹": "영업본부",
   "공공사업파트": "영업본부",
-  "bd팀": "영업본부", // 가정: 사업개발 → 영업본부
-
   // PM본부
   "pm1팀": "PM본부",
   "pm2팀": "PM본부",
   "pmo": "PM본부",
+  "bd팀": "PM본부",
 
   // Corporate실
   "기획팀": "Corporate실",
